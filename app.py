@@ -1,12 +1,13 @@
 import streamlit as st
-import pandas as pd
-from src.pd_functions import *
-from src.utils import validate_csv_file
+from streamlit_gsheets import GSheetsConnection
+from src.utils import process_uploaded_file
+from src.gsheet import configure_gsheet
+from src.display import display_leaderboard, display_setup_error, display_participant_results, update_and_plot_submissions, get_participant_name
 
 # Constants
 RESULTS_PATH = 'data/true_y.csv'
 
-def main():
+def main(gsheet_conn):
     st.title('Housing Classification App')
     st.write('Welcome to the housing classification app. Please enter your name and upload your results file to check your accuracy and see the leaderboard.')
 
@@ -16,59 +17,19 @@ def main():
         uploaded_file = st.file_uploader("Choose a CSV file", type=['csv'])
 
         if uploaded_file:
-            process_uploaded_file(uploaded_file, participant_name)
+            participant_results = process_uploaded_file(uploaded_file, participant_name, gsheet_conn, RESULTS_PATH)
+            display_participant_results(participant_results)
+            update_and_plot_submissions(participant_results, participant_name, gsheet_conn)
         else:
             st.warning('Please upload a file.')
     else:
         st.warning('Please enter your participant name.')
 
-    display_leaderboard()
-
-def get_participant_name():
-    text_input_container = st.empty()
-    text_input_container.text_input("Enter your participant name: ", key="text_input")
-
-    if st.session_state.text_input != "":
-        text_input_container.empty()
-        st.info(f'Participant name {st.session_state.text_input}')
-        return st.session_state.text_input
-
-    return None
-
-def process_uploaded_file(uploaded_file, participant_name):
-    if validate_csv_file(uploaded_file):
-        try:
-            uploaded_file.seek(0)  # Reset file pointer to the beginning
-            test = get_ready_test(RESULTS_PATH, uploaded_file)
-            if isinstance(test, pd.DataFrame):
-                participant_results = get_accuracy(RESULTS_PATH, test)
-                st.success('Dataframe uploaded successfully!')
-                display_participant_results(participant_results)
-                update_and_plot_submissions(participant_results, participant_name)
-                
-        except Exception as e:
-            st.error(f'The file could not be processed. Error: {e}')
-    else:
-        st.error('The uploaded file has the wrong format. Please, review it and ensure it contains the required columns.')
-
-
-
-def display_participant_results(participant_results):
-    st.title('Participant results')
-    st.dataframe(participant_results)
-
-def update_and_plot_submissions(participant_results, participant_name):
-    try:
-        update_submissions(participant_results)
-        plot_submissions(participant_name)
-    except:
-        participant_results.to_pickle('files_to_update/submissions.pkl')
-
-def display_leaderboard():
-    try:
-        show_leaderboard()
-    except:
-        st.write("There are no submissions.")
+    display_leaderboard(gsheet_conn)
 
 if __name__ == "__main__":
-    main()
+    gsheet_conn = configure_gsheet()
+    if isinstance(gsheet_conn, GSheetsConnection):
+        main(gsheet_conn)
+    else:
+        display_setup_error()
