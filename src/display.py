@@ -6,44 +6,47 @@ from src.utils import get_submissions_dataframe, generate_leaderboard_dataframe,
 
 def get_participant_name():
     
-    st.write("You can download the test data, train data and an example upload file below:")
+    welcome_container = st.empty()
 
-    cols = st.columns(3)
+    with welcome_container.container():
 
-    with cols[0]:
-        with open("data/test.csv", "rb") as f:
-            st.download_button(
-                label="Download test data",
-                data=f,
-                file_name="test.csv",
-                mime="text/csv"
-            )
+        st.write("You can download the test data, train data and an example upload file below:")
 
-    with cols[1]:
-        with open("data/housing-classification-iter6.csv", "rb") as f:
-            st.download_button(
-                label="Download train data",
-                data=f,
-                file_name="train.csv",
-                mime="text/csv"
-            )
+        cols = st.columns(3)
 
-    with cols[2]:
-        with open("data/example_upload.csv", "rb") as f:
-            st.download_button(
-                label="Download example upload",
-                data=f,
-                file_name="example_upload.csv",
-                mime="text/csv"
-            )
+        with cols[0]:
+            with open("data/test.csv", "rb") as f:
+                st.download_button(
+                    label="Download test data",
+                    data=f,
+                    file_name="test.csv",
+                    mime="text/csv"
+                )
 
-    text_input_container = st.empty()
-    text_input_container.text_input("Enter your participant name: ", key="text_input")
+        with cols[1]:
+            with open("data/housing-classification-iter6.csv", "rb") as f:
+                st.download_button(
+                    label="Download train data",
+                    data=f,
+                    file_name="train.csv",
+                    mime="text/csv"
+                )
+
+        with cols[2]:
+            with open("data/example_upload.csv", "rb") as f:
+                st.download_button(
+                    label="Download example upload",
+                    data=f,
+                    file_name="example_upload.csv",
+                    mime="text/csv"
+                )
+
+        st.text_input("Enter your participant name: ", key="text_input")
 
 
 
     if st.session_state.text_input != "":
-        text_input_container.empty()
+        welcome_container.empty()
         st.info(f'Participant name {st.session_state.text_input}')
         return st.session_state.text_input
 
