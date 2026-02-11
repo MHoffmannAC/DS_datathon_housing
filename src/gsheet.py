@@ -4,6 +4,7 @@ import pandas as pd
 
 REQUIRED_COLUMNS_LEADERBOARD = ["participant", "accuracy", "submission_time"]
 
+
 def ensure_sheet_structure(gsheet_conn: GSheetsConnection):
     try:
         df = gsheet_conn.read(ttl=0)
@@ -23,30 +24,28 @@ def ensure_sheet_structure(gsheet_conn: GSheetsConnection):
         return df
 
     except Exception as e:
-        raise Exception(
-            f"Could not validate Google Sheet structure. {e}"
-        )
+        raise Exception(f"Could not validate Google Sheet structure. {e}")
+
 
 def configure_gsheet():
     try:
         "connections" in st.secrets
-    except:
+    except Exception:
         return "Streamlit secrets not found or empty. Please set up your secrets as per the instructions."
     if (
-        "connections" in st.secrets and 
-        "gsheets" in st.secrets["connections"] and 
-        "spreadsheet" in st.secrets["connections"]["gsheets"] and
-        "private_key"in st.secrets["connections"]["gsheets"]
+        "connections" in st.secrets
+        and "gsheets" in st.secrets["connections"]
+        and "spreadsheet" in st.secrets["connections"]["gsheets"]
+        and "private_key" in st.secrets["connections"]["gsheets"]
     ):
         try:
             gsheet_conn = st.connection(
-                                        "gsheets",
-                                        type=GSheetsConnection,
-                                        )
+                "gsheets",
+                type=GSheetsConnection,
+            )
             ensure_sheet_structure(gsheet_conn)
             return gsheet_conn
         except Exception as e:
             return f"Error connecting to Google Sheets. Please check whether you shared the Spreadsheet with the Service Account. {e}"
     else:
         return "Streamlit secrets incomplete. Please set up your secrets as per the instructions."
-
