@@ -1,5 +1,4 @@
 import streamlit as st
-from streamlit_server_state import server_state, server_state_lock
 from src.utils import process_uploaded_file, state_inits
 from src.display import (
     display_leaderboard,
@@ -21,16 +20,12 @@ def main():
         uploaded_file = st.file_uploader("Choose a CSV file", type=["csv"])
 
         if uploaded_file:
-            participant_results = process_uploaded_file(
-                uploaded_file, RESULTS_PATH
-            )
+            participant_results = process_uploaded_file(uploaded_file, RESULTS_PATH)
             display_participant_results(participant_results)
-            update_and_plot_submissions(
-                participant_results, participant_name, batch
-            )
+            update_and_plot_submissions(participant_results, participant_name, batch)
         else:
             st.warning("Please upload a file.")
-        
+
         display_leaderboard()
     else:
         st.stop()

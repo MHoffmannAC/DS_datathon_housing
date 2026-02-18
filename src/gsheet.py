@@ -13,21 +13,20 @@ def get_gsheet_connection():
 
 
 def ensure_batch_sheet_exists(batch: str):
-    
+
     try:
         sh = open_gsheet_from_url()
     except gspread.SpreadsheetNotFound:
         st.error("Could not open spreadsheet")
-        
+
     existing = [ws.title for ws in sh.worksheets()]
 
-    
     if batch not in existing:
-        sh.add_worksheet(title=batch, rows="1000", cols="3")    
+        sh.add_worksheet(title=batch, rows="1000", cols="3")
 
 
 def ensure_sheet_structure(batch: str):
-        
+
     try:
         df = st.session_state.gsheet_conn.read(worksheet=batch, ttl=0)
 
@@ -38,16 +37,12 @@ def ensure_sheet_structure(batch: str):
             return empty_df
 
         if list(df.columns) != REQUIRED_COLUMNS_LEADERBOARD:
-            raise Exception(
-                f"Sheet structure is invalid. "
-                f"Expected columns: {REQUIRED_COLUMNS_LEADERBOARD}, "
-                f"but got: {list(df.columns)}"
-            )
+            st.error("Spreadsheet contains invalid data: wrong columns")
 
         return df
 
-    except Exception as e:
-        raise Exception(f"Could not validate Google Sheet structure. {e}")
+    except Exception:
+        st.error("Could not validate Google Sheet structure.")
 
 
 def configure_gsheet(batch: str | None = None):
@@ -55,7 +50,7 @@ def configure_gsheet(batch: str | None = None):
         "connections" in st.secrets
     except Exception:
         return "Streamlit secrets not found or empty. Please set up your secrets as per the instructions."
-    
+
     if (
         "connections" in st.secrets
         and "gsheets" in st.secrets["connections"]
@@ -63,9 +58,8 @@ def configure_gsheet(batch: str | None = None):
         and "private_key" in st.secrets["connections"]["gsheets"]
     ):
         try:
-            
             gsheet_conn = get_gsheet_connection()
-            
+
             if batch:
                 ensure_batch_sheet_exists(batch)
                 ensure_sheet_structure(batch)

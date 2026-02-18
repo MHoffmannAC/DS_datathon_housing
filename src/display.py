@@ -49,26 +49,34 @@ def get_participant_info():
 
         st.divider()
 
-        st.warning("Please enter **your name** (real or alias) and **the code** provided by your instructor.")
-        
+        st.warning(
+            "Please enter **your name** (real or alias) and **the code** provided by your instructor."
+        )
+
         st.text_input("Enter your name: ", key="name_input")
         st.text_input("Enter your batch's secret code: ", key="code_input")
 
     batches_df = get_batches_dataframe()
-    
+
     code_to_batch = batches_df.set_index("Code")["Batch"]
     code_to_alltime = batches_df.set_index("Code")["Show All-time?"]
 
     st.session_state.batch = code_to_batch.get(st.session_state.code_input)
     st.session_state.alltime = code_to_alltime.get(st.session_state.code_input)
 
-    if st.session_state.name_input and st.session_state.code_input and st.session_state.batch:
+    if (
+        st.session_state.name_input
+        and st.session_state.code_input
+        and st.session_state.batch
+    ):
         welcome_container.empty()
         if st.session_state.batch not in server_state.submissions:
-            server_state.submissions[st.session_state.batch] = st.session_state.gsheet_conn.read(
-                                                                    worksheet=st.session_state.batch,
-                                                                    ttl=0,
-                                                                )
+            server_state.submissions[st.session_state.batch] = (
+                st.session_state.gsheet_conn.read(
+                    worksheet=st.session_state.batch,
+                    ttl=0,
+                )
+            )
         configure_gsheet(st.session_state.batch)
         st.info(f"Welcome {st.session_state.name_input} from {st.session_state.batch}")
         return st.session_state.name_input, st.session_state.batch
@@ -110,7 +118,9 @@ def show_leaderboard():
         st.header(f"Leaderboard from {st.session_state.batch}")
         submissions_df = server_state.submissions[st.session_state.batch]
         if not submissions_df.empty:
-            leaderboard_df = generate_leaderboard_dataframe(submissions_df).drop("batch", axis=1)
+            leaderboard_df = generate_leaderboard_dataframe(submissions_df).drop(
+                "batch", axis=1
+            )
             st.dataframe(leaderboard_df)
         else:
             st.write("There are no submissions from your batch yet.")
@@ -119,7 +129,9 @@ def show_leaderboard():
             st.divider()
             st.header("All-time Leaderboard")
 
-            leaderboard_df = generate_leaderboard_dataframe(server_state.alltime_submissions)
+            leaderboard_df = generate_leaderboard_dataframe(
+                server_state.alltime_submissions
+            )
             st.dataframe(leaderboard_df)
 
 

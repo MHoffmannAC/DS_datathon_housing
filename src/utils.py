@@ -18,7 +18,11 @@ def state_inits():
     if "alltime_submissions" not in server_state:
         with server_state_lock["alltime_submissions"]:
             sh = open_gsheet_from_url()
-            worksheet_titles = [ws.title for ws in sh.worksheets() if ws.title not in  ["Batches", "anonymous"]]
+            worksheet_titles = [
+                ws.title
+                for ws in sh.worksheets()
+                if ws.title not in ["Batches", "anonymous"]
+            ]
 
             dfs = []
             for ws_name in worksheet_titles:
@@ -27,9 +31,9 @@ def state_inits():
                     dfs.append(df)
 
             combined_df = pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
-            
+
             server_state.alltime_submissions = combined_df
-            
+
 
 def validate_csv_file(file):
     try:
@@ -44,27 +48,23 @@ def validate_csv_file(file):
         return False
 
 
-def update_submissions(
-    participant_results: pd.DataFrame
-):
+def update_submissions(participant_results: pd.DataFrame):
     with server_state_lock["submissions"], no_rerun:
         if not server_state.submissions[st.session_state.batch].empty:
             server_state.submissions[st.session_state.batch] = pd.concat(
                 [server_state.submissions[st.session_state.batch], participant_results],
-                ignore_index=True
+                ignore_index=True,
             )
-        else:    
+        else:
             server_state.submissions[st.session_state.batch] = participant_results
         updated_submissions_df = server_state.submissions[st.session_state.batch].copy()
-        
+
     with server_state_lock["alltime_submissions"], no_rerun:
         server_state.alltime_submissions = pd.concat(
-            [server_state.alltime_submissions, participant_results],
-            ignore_index=True
+            [server_state.alltime_submissions, participant_results], ignore_index=True
         )
     st.session_state.gsheet_conn.update(
-        worksheet=st.session_state.batch,
-        data=updated_submissions_df
+        worksheet=st.session_state.batch, data=updated_submissions_df
     )
 
 
@@ -79,9 +79,7 @@ def get_batches_dataframe():
         st.error("Could not read batches from Google Sheets")
 
 
-def process_uploaded_file(
-    uploaded_file, RESULTS_PATH: str
-):
+def process_uploaded_file(uploaded_file, RESULTS_PATH: str):
     if validate_csv_file(uploaded_file):
         try:
             uploaded_file.seek(0)  # Reset file pointer to the beginning
@@ -106,7 +104,9 @@ def generate_leaderboard_dataframe(submissions_df):
                 "count"
             )
         )
-        .sort_values(["accuracy", "submission_time", "batch"], ascending=[False, True, True])
+        .sort_values(
+            ["accuracy", "submission_time", "batch"], ascending=[False, True, True]
+        )
         .drop_duplicates(subset=["participant"], keep="first")
         .assign(position=lambda df_: range(1, len(df_) + 1))
         .set_index("position")

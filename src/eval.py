@@ -60,7 +60,14 @@ def get_accuracy(RESULTS_PATH: str, test: pd.DataFrame):
     accuracy_value = accuracy_count / results.shape[0]
 
     return pd.DataFrame(
-        [[accuracy_value, st.session_state.name_input, st.session_state.batch, pd.Timestamp.now().isoformat()]],
+        [
+            [
+                accuracy_value,
+                st.session_state.name_input,
+                st.session_state.batch,
+                pd.Timestamp.now().isoformat(),
+            ]
+        ],
         columns=["accuracy", "participant", "batch", "submission_time"],
         index=["result"],
     )
