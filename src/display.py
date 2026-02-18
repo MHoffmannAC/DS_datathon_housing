@@ -63,6 +63,7 @@ def get_participant_info():
 
     st.session_state.batch = code_to_batch.get(st.session_state.code_input)
     st.session_state.alltime = code_to_alltime.get(st.session_state.code_input)
+    print(st.session_state.alltime)
 
     if (
         st.session_state.name_input
@@ -125,7 +126,7 @@ def show_leaderboard():
         else:
             st.write("There are no submissions from your batch yet.")
 
-        if not server_state.alltime_submissions.empty:
+        if (not server_state.alltime_submissions.empty) and st.session_state.alltime:
             st.divider()
             st.header("All-time Leaderboard")
 
