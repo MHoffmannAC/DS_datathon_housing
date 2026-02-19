@@ -1,9 +1,9 @@
 import streamlit as st
-from src.utils import process_uploaded_file, state_inits
+from src.utils import process_uploaded_file, state_inits, update_submissions
 from src.display import (
     display_leaderboard,
     display_participant_results,
-    update_and_plot_submissions,
+    plot_submissions,
     get_participant_info,
 )
 
@@ -22,10 +22,11 @@ def main():
         if uploaded_file:
             participant_results = process_uploaded_file(uploaded_file, RESULTS_PATH)
             display_participant_results(participant_results)
-            update_and_plot_submissions(participant_results, participant_name, batch)
+            update_submissions(participant_results)
         else:
             st.warning("Please upload a file.")
 
+        plot_submissions(participant_name)
         display_leaderboard()
     else:
         st.stop()

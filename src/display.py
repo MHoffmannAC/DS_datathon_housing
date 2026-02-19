@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 from src.utils import (
     get_batches_dataframe,
-    update_submissions,
     get_global_store,
     build_leaderboards,
 )
@@ -109,7 +108,7 @@ def plot_submissions(participant_name):
             "submission_time"
         ).set_index("submission_time")
         st.line_chart(participant_submissions)
-    else:
+    elif len(participant_submissions):
         st.success("Congratulations on your first submission!")
 
 
@@ -120,7 +119,7 @@ def show_leaderboard():
     else:
         store = get_global_store()
         st.divider()
-        st.header(f"Leaderboard from {st.session_state.batch}")
+        st.header(f"🏆 Leaderboard from {st.session_state.batch}")
         submissions_df = store["submissions"][st.session_state.batch]
         store["leaderboards"][st.session_state.batch]
         if not submissions_df.empty:
@@ -133,7 +132,7 @@ def show_leaderboard():
 
         if (not store["alltime_submissions"].empty) and st.session_state.alltime:
             st.divider()
-            st.header("All-time Leaderboard")
+            st.header("👑 All-time Leaderboard")
 
             st.dataframe(store["alltime_leaderboard"])
 
@@ -147,7 +146,7 @@ def display_leaderboard() -> None:
 
 
 def display_participant_results(participant_results) -> None:
-    st.title("Participant results")
+    st.header("📊 Your results")
     st.dataframe(participant_results)
 
 
@@ -158,10 +157,3 @@ def display_setup_error(error_desc: str) -> None:
     
         Error details: {error_desc}
     """)
-
-
-def update_and_plot_submissions(
-    participant_results: pd.DataFrame, participant_name: str, batch: str
-):
-    update_submissions(participant_results)
-    plot_submissions(participant_name)
