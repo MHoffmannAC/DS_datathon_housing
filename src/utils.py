@@ -3,36 +3,44 @@ import streamlit as st
 import io
 from src.eval import get_ready_test, get_accuracy
 from src.gsheet import open_gsheet_from_url, configure_gsheet
-from streamlit_server_state import server_state, server_state_lock, no_rerun
+
+
+@st.cache_resource
+def get_global_store():
+    return {
+        "submissions": {},
+        "alltime_submissions": None,
+        "leaderboards": {},
+        "alltime_leaderboard": None,
+    }
 
 
 def state_inits():
     if "gsheet_conn" not in st.session_state:
         configure_gsheet()
-    if "submissions" not in server_state:
-        with server_state_lock["submissions"]:
-            if "submissions" not in server_state:
-                server_state.submissions = {}
-            sh = open_gsheet_from_url()
 
-    if "alltime_submissions" not in server_state:
-        with server_state_lock["alltime_submissions"]:
-            sh = open_gsheet_from_url()
-            worksheet_titles = [
-                ws.title
-                for ws in sh.worksheets()
-                if ws.title not in ["Batches", "anonymous"]
-            ]
+    store = get_global_store()
 
-            dfs = []
-            for ws_name in worksheet_titles:
-                df = st.session_state.gsheet_conn.read(worksheet=ws_name, ttl=0)
-                if df is not None and not df.empty:
-                    dfs.append(df)
+    if store["alltime_submissions"] is None:
+        sh = open_gsheet_from_url()
 
-            combined_df = pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
+        worksheet_titles = [
+            ws.title
+            for ws in sh.worksheets()
+            if ws.title not in ["Batches", "anonymous"]
+        ]
 
-            server_state.alltime_submissions = combined_df
+        dfs = []
+        for ws_name in worksheet_titles:
+            df = st.session_state.gsheet_conn.read(worksheet=ws_name, ttl=0)
+            if df is not None and not df.empty:
+                dfs.append(df)
+
+        store["alltime_submissions"] = (
+            pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
+        )
+
+        build_leaderboards()
 
 
 def validate_csv_file(file):
@@ -49,23 +57,27 @@ def validate_csv_file(file):
 
 
 def update_submissions(participant_results: pd.DataFrame):
-    with server_state_lock["submissions"], no_rerun:
-        if not server_state.submissions[st.session_state.batch].empty:
-            server_state.submissions[st.session_state.batch] = pd.concat(
-                [server_state.submissions[st.session_state.batch], participant_results],
-                ignore_index=True,
-            )
-        else:
-            server_state.submissions[st.session_state.batch] = participant_results
-        updated_submissions_df = server_state.submissions[st.session_state.batch].copy()
+    store = get_global_store()
+    batch = st.session_state.batch
 
-    with server_state_lock["alltime_submissions"], no_rerun:
-        server_state.alltime_submissions = pd.concat(
-            [server_state.alltime_submissions, participant_results], ignore_index=True
+    if batch in store["submissions"] and not store["submissions"][batch].empty:
+        store["submissions"][batch] = pd.concat(
+            [store["submissions"][batch], participant_results],
+            ignore_index=True,
         )
-    st.session_state.gsheet_conn.update(
-        worksheet=st.session_state.batch, data=updated_submissions_df
+    else:
+        store["submissions"][batch] = participant_results
+
+    updated_submissions_df = store["submissions"][batch].copy()
+
+    store["alltime_submissions"] = pd.concat(
+        [store["alltime_submissions"], participant_results],
+        ignore_index=True,
     )
+
+    st.session_state.gsheet_conn.update(worksheet=batch, data=updated_submissions_df)
+
+    build_leaderboards()
 
 
 @st.cache_data(ttl=120)
@@ -114,3 +126,22 @@ def generate_leaderboard_dataframe(submissions_df):
     )
 
     return best_results_per_participant
+
+
+def build_leaderboards():
+
+    store = get_global_store()
+
+    for batch, df in store["submissions"].items():
+        if df is not None and not df.empty:
+            store["leaderboards"][batch] = generate_leaderboard_dataframe(df)
+        else:
+            store["leaderboards"][batch] = pd.DataFrame()
+
+    if (
+        store["alltime_submissions"] is not None
+        and not store["alltime_submissions"].empty
+    ):
+        store["alltime_leaderboard"] = generate_leaderboard_dataframe(
+            store["alltime_submissions"]
+        )

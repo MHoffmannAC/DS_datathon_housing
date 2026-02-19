@@ -2,11 +2,11 @@ import streamlit as st
 import pandas as pd
 from src.utils import (
     get_batches_dataframe,
-    generate_leaderboard_dataframe,
     update_submissions,
+    get_global_store,
+    build_leaderboards,
 )
 from src.gsheet import configure_gsheet
-from streamlit_server_state import server_state
 
 
 def get_participant_info():
@@ -63,7 +63,6 @@ def get_participant_info():
 
     st.session_state.batch = code_to_batch.get(st.session_state.code_input)
     st.session_state.alltime = code_to_alltime.get(st.session_state.code_input)
-    print(st.session_state.alltime)
 
     if (
         st.session_state.name_input
@@ -71,13 +70,16 @@ def get_participant_info():
         and st.session_state.batch
     ):
         welcome_container.empty()
-        if st.session_state.batch not in server_state.submissions:
-            server_state.submissions[st.session_state.batch] = (
+        store = get_global_store()
+
+        if st.session_state.batch not in store["submissions"]:
+            store["submissions"][st.session_state.batch] = (
                 st.session_state.gsheet_conn.read(
                     worksheet=st.session_state.batch,
                     ttl=0,
                 )
             )
+            build_leaderboards()
         configure_gsheet(st.session_state.batch)
         st.info(f"Welcome {st.session_state.name_input} from {st.session_state.batch}")
         return st.session_state.name_input, st.session_state.batch
@@ -92,8 +94,9 @@ def plot_submissions(participant_name):
     Args:
         participant_name (str): Name of the participant.
     """
+    store = get_global_store()
     participant_submissions = (
-        server_state.submissions[st.session_state.batch]
+        store["submissions"][st.session_state.batch]
         .query("participant == @participant_name")
         .filter(["submission_time", "accuracy"])
         .copy()
@@ -115,28 +118,27 @@ def show_leaderboard():
     if st.session_state.batch == "anonymous":
         st.write("You decided to not compete in any leaderboard.")
     else:
+        store = get_global_store()
         st.divider()
         st.header(f"Leaderboard from {st.session_state.batch}")
-        submissions_df = server_state.submissions[st.session_state.batch]
+        submissions_df = store["submissions"][st.session_state.batch]
+        store["leaderboards"][st.session_state.batch]
         if not submissions_df.empty:
-            leaderboard_df = generate_leaderboard_dataframe(submissions_df).drop(
+            leaderboard_df = store["leaderboards"][st.session_state.batch].drop(
                 "batch", axis=1
             )
             st.dataframe(leaderboard_df)
         else:
             st.write("There are no submissions from your batch yet.")
 
-        if (not server_state.alltime_submissions.empty) and st.session_state.alltime:
+        if (not store["alltime_submissions"].empty) and st.session_state.alltime:
             st.divider()
             st.header("All-time Leaderboard")
 
-            leaderboard_df = generate_leaderboard_dataframe(
-                server_state.alltime_submissions
-            )
-            st.dataframe(leaderboard_df)
+            st.dataframe(store["alltime_leaderboard"])
 
 
-@st.fragment(run_every=30)
+@st.fragment(run_every=10)
 def display_leaderboard() -> None:
     try:
         show_leaderboard()

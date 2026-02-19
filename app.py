@@ -31,6 +31,5 @@ def main():
         st.stop()
 
 
-if __name__ == "__main__":
-    state_inits()
-    main()
+state_inits()
+main()
