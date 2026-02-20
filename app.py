@@ -5,6 +5,7 @@ from src.display import (
     display_participant_results,
     plot_submissions,
     get_participant_info,
+    display_admin,
 )
 
 # Constants
@@ -12,11 +13,11 @@ RESULTS_PATH = "data/true_y.csv"
 
 
 def main():
-    st.title("Welcome to our classification competition!")
+    st.title("Welcome to our classification competition!", anchor=False)
 
-    participant_name, batch = get_participant_info()
+    get_participant_info()
 
-    if participant_name and batch:
+    if st.session_state.user_name and st.session_state.batch:
         uploaded_file = st.file_uploader("Choose a CSV file", type=["csv"])
 
         if uploaded_file:
@@ -26,10 +27,11 @@ def main():
         else:
             st.warning("Please upload a file.")
 
-        plot_submissions(participant_name)
+        plot_submissions(st.session_state.user_name)
         display_leaderboard()
-    else:
-        st.stop()
+        
+        if st.session_state.batch == "Instructor":
+            display_admin()
 
 
 state_inits()

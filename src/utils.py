@@ -2,7 +2,7 @@ import pandas as pd
 import streamlit as st
 import io
 from src.eval import get_ready_test, get_accuracy
-from src.gsheet import open_gsheet_from_url, configure_gsheet
+from src.gsheet import configure_gsheet
 
 
 @st.cache_resource
@@ -18,23 +18,40 @@ def get_global_store():
 def state_inits():
     if "gsheet_conn" not in st.session_state:
         configure_gsheet()
+    if "user_name" not in st.session_state:
+        st.session_state.user_name = None
+    if "code_input" not in st.session_state:
+        st.session_state.code_input = None
+    if "batch" not in st.session_state:
+        st.session_state.batch = None
+    if "alltime" not in st.session_state:
+        st.session_state.alltime = None
 
     store = get_global_store()
 
     if store["alltime_submissions"] is None:
-        sh = open_gsheet_from_url()
+        
+        batches = st.session_state.gsheet_conn.read(
+            worksheet="Batches",
+            ttl=0
+        )["Batch"].tolist()
 
         worksheet_titles = [
-            ws.title
-            for ws in sh.worksheets()
-            if ws.title not in ["Batches", "anonymous"]
+            b for b in batches if b not in ["Batches", "anonymous"]
         ]
 
         dfs = []
         for ws_name in worksheet_titles:
-            df = st.session_state.gsheet_conn.read(worksheet=ws_name, ttl=0)
-            if df is not None and not df.empty:
-                dfs.append(df)
+            try:
+                df = st.session_state.gsheet_conn.read(
+                    worksheet=ws_name,
+                    ttl=0
+                )
+                if df is not None and not df.empty:
+                    dfs.append(df)
+
+            except Exception:
+                pass
 
         store["alltime_submissions"] = (
             pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
@@ -129,7 +146,6 @@ def generate_leaderboard_dataframe(submissions_df):
 
 
 def build_leaderboards():
-
     store = get_global_store()
 
     for batch, df in store["submissions"].items():

@@ -3,8 +3,23 @@ import streamlit as st
 import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials
+from gspread.exceptions import WorksheetNotFound
 
 REQUIRED_COLUMNS_LEADERBOARD = ["participant", "accuracy", "submission_time", "batch"]
+
+
+def _open_spreadsheet():
+    creds_dict = dict(st.secrets["connections"]["gsheets"])
+
+    scopes = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive",
+    ]
+
+    creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+    client = gspread.authorize(creds)
+
+    return client.open_by_url(creds_dict["spreadsheet"])
 
 
 @st.cache_resource
@@ -14,19 +29,28 @@ def get_gsheet_connection():
 
 def ensure_batch_sheet_exists(batch: str):
 
+    conn = st.session_state.gsheet_conn
+
     try:
-        sh = open_gsheet_from_url()
-    except gspread.SpreadsheetNotFound:
-        st.error("Could not open spreadsheet")
+        conn.read(worksheet=batch, ttl=0)
+        return
 
-    existing = [ws.title for ws in sh.worksheets()]
+    except WorksheetNotFound:
+        pass
 
-    if batch not in existing:
-        sh.add_worksheet(title=batch, rows="1000", cols="3")
+    sh = _open_spreadsheet()
+
+    sh.add_worksheet(
+        title=batch,
+        rows="1000",
+        cols="10",
+    )
+
+    empty_df = pd.DataFrame(columns=REQUIRED_COLUMNS_LEADERBOARD)
+    conn.update(worksheet=batch, data=empty_df)
 
 
 def ensure_sheet_structure(batch: str):
-
     try:
         df = st.session_state.gsheet_conn.read(worksheet=batch, ttl=0)
 
@@ -36,15 +60,13 @@ def ensure_sheet_structure(batch: str):
 
             return empty_df
 
-        if list(df.columns) != REQUIRED_COLUMNS_LEADERBOARD:
-            st.error("Spreadsheet contains invalid data: wrong columns")
-
         return df
 
     except Exception:
         st.error("Could not validate Google Sheet structure.")
 
 
+@st.cache_data
 def configure_gsheet(batch: str | None = None):
     try:
         "connections" in st.secrets
@@ -59,27 +81,14 @@ def configure_gsheet(batch: str | None = None):
     ):
         try:
             gsheet_conn = get_gsheet_connection()
-
+            st.session_state.gsheet_conn = gsheet_conn
+            
             if batch:
                 ensure_batch_sheet_exists(batch)
                 ensure_sheet_structure(batch)
-            st.session_state.gsheet_conn = gsheet_conn
+            
             return "Successful"
         except Exception as e:
-            return f"Error connecting to Google Sheets. Please check whether you shared the Spreadsheet with the Service Account. {e}"
+            raise Exception(f"Error connecting to Google Sheets. Please check whether you shared the Spreadsheet with the Service Account. {e}")
     else:
         return "Streamlit secrets incomplete. Please set up your secrets as per the instructions."
-
-
-@st.cache_data(ttl=60)
-def open_gsheet_from_url():
-    creds_dict = dict(st.secrets["connections"]["gsheets"])
-    scopes = [
-        "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive",
-    ]
-    creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
-    client = gspread.authorize(creds)
-
-    spreadsheet_url = creds_dict["spreadsheet"]
-    return client.open_by_url(spreadsheet_url)

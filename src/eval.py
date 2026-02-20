@@ -63,7 +63,7 @@ def get_accuracy(RESULTS_PATH: str, test: pd.DataFrame):
         [
             [
                 accuracy_value,
-                st.session_state.name_input,
+                st.session_state.user_name,
                 st.session_state.batch,
                 pd.Timestamp.now().isoformat(),
             ]

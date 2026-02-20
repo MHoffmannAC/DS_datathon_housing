@@ -10,9 +10,26 @@ from src.gsheet import configure_gsheet
 
 def get_participant_info():
 
-    welcome_container = st.empty()
+    if (
+        st.session_state.user_name
+        and st.session_state.code_input
+        and st.session_state.batch
+    ):
+        store = get_global_store()
 
-    with welcome_container.container():
+        configure_gsheet(st.session_state.batch)
+        if st.session_state.batch not in store["submissions"]:
+            store["submissions"][st.session_state.batch] = (
+                st.session_state.gsheet_conn.read(
+                    worksheet=st.session_state.batch,
+                    ttl=0,
+                )
+            )
+            build_leaderboards()
+        st.info(f"Welcome {st.session_state.user_name} from {st.session_state.batch}")
+
+    else:
+
         st.write(
             "If you haven't done so yet, please download the test data, train data, and an example upload file below."
         )
@@ -52,38 +69,29 @@ def get_participant_info():
             "Please enter **your name** (real or alias) and **the code** provided by your instructor."
         )
 
-        st.text_input("Enter your name: ", key="name_input")
-        st.text_input("Enter your batch's secret code: ", key="code_input")
+        batches_df = get_batches_dataframe()
 
-    batches_df = get_batches_dataframe()
-
-    code_to_batch = batches_df.set_index("Code")["Batch"]
-    code_to_alltime = batches_df.set_index("Code")["Show All-time?"]
-
-    st.session_state.batch = code_to_batch.get(st.session_state.code_input)
-    st.session_state.alltime = code_to_alltime.get(st.session_state.code_input)
-
-    if (
-        st.session_state.name_input
-        and st.session_state.code_input
-        and st.session_state.batch
-    ):
-        welcome_container.empty()
-        store = get_global_store()
-
-        if st.session_state.batch not in store["submissions"]:
-            store["submissions"][st.session_state.batch] = (
-                st.session_state.gsheet_conn.read(
-                    worksheet=st.session_state.batch,
-                    ttl=0,
-                )
+        user_name = st.text_input("Enter your name: ")
+        if user_name:
+            st.session_state.user_name = user_name
+            
+        code_input = st.text_input("Enter your batch's secret code: ")
+        if code_input:
+            st.session_state.code_input = code_input
+            code_to_batch = batches_df.set_index("Code")["Batch"]
+            st.session_state.batch = code_to_batch.get(
+                st.session_state.code_input,
+                st.session_state.get("batch")
             )
-            build_leaderboards()
-        configure_gsheet(st.session_state.batch)
-        st.info(f"Welcome {st.session_state.name_input} from {st.session_state.batch}")
-        return st.session_state.name_input, st.session_state.batch
+            code_to_alltime = batches_df.set_index("Code")["Show All-time?"]            
+            st.session_state.alltime = code_to_alltime.get(st.session_state.code_input)
 
-    return None, None
+        if (
+            st.session_state.user_name
+            and st.session_state.code_input
+            and st.session_state.batch
+        ):
+            st.rerun()
 
 
 def plot_submissions(participant_name):
@@ -119,7 +127,7 @@ def show_leaderboard():
     else:
         store = get_global_store()
         st.divider()
-        st.header(f"🏆 Leaderboard from {st.session_state.batch}")
+        st.header(f"🏆 Leaderboard from {st.session_state.batch}", anchor=False)
         submissions_df = store["submissions"][st.session_state.batch]
         store["leaderboards"][st.session_state.batch]
         if not submissions_df.empty:
@@ -132,7 +140,7 @@ def show_leaderboard():
 
         if (not store["alltime_submissions"].empty) and st.session_state.alltime:
             st.divider()
-            st.header("👑 All-time Leaderboard")
+            st.header("👑 All-time Leaderboard", anchor=False)
 
             st.dataframe(store["alltime_leaderboard"])
 
@@ -146,7 +154,7 @@ def display_leaderboard() -> None:
 
 
 def display_participant_results(participant_results) -> None:
-    st.header("📊 Your results")
+    st.header("📊 Your results", anchor=False)
     st.dataframe(participant_results)
 
 
@@ -157,3 +165,10 @@ def display_setup_error(error_desc: str) -> None:
     
         Error details: {error_desc}
     """)
+
+def display_admin():
+    if st.button("Clear cached ressources"):
+        get_global_store.clear()
+        get_batches_dataframe.clear()
+        configure_gsheet.clear()
+        st.rerun()
