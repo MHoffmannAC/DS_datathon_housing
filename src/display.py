@@ -16,15 +16,20 @@ def get_participant_info():
         and st.session_state.batch
     ):
 
-        configure_gsheet(st.session_state.batch, _store=store)
-        if st.session_state.batch not in store["submissions"]:
-            store["submissions"][st.session_state.batch] = (
-                store["gsheet_conn"].read(
-                    worksheet=st.session_state.batch,
-                    ttl=0,
+        try:
+            configure_gsheet(st.session_state.batch, _store=store)
+            if st.session_state.batch not in store["submissions"]:
+                store["submissions"][st.session_state.batch] = (
+                    store["gsheet_conn"].read(
+                        worksheet=st.session_state.batch,
+                        ttl=0,
+                    )
                 )
-            )
-            build_leaderboards()
+                build_leaderboards()
+        except Exception:
+            st.error("An error occured while connecting to Google Sheets. Please wait a moment and try again. (Detail: Could not load your batch submissions.)")
+            st.stop()
+                
         st.info(f"Welcome {st.session_state.user_name} from {st.session_state.batch}")
 
     else:
@@ -149,7 +154,7 @@ def display_leaderboard() -> None:
     try:
         show_leaderboard()
     except Exception as e:
-        st.error(f"An error occured while extracting the leaderboard: {e}")
+        st.error(f"An error occured while extracting the leaderboard data. Please wait a moment and try again.")
 
 
 def display_participant_results(participant_results) -> None:

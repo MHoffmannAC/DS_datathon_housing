@@ -34,18 +34,19 @@ def ensure_batch_sheet_exists(batch: str, conn):
         return
 
     except WorksheetNotFound:
-        pass
+        sh = _open_spreadsheet()
 
-    sh = _open_spreadsheet()
+        sh.add_worksheet(
+            title=batch,
+            rows="1000",
+            cols="10",
+        )
 
-    sh.add_worksheet(
-        title=batch,
-        rows="1000",
-        cols="10",
-    )
-
-    empty_df = pd.DataFrame(columns=REQUIRED_COLUMNS_LEADERBOARD)
-    conn.update(worksheet=batch, data=empty_df)
+        empty_df = pd.DataFrame(columns=REQUIRED_COLUMNS_LEADERBOARD)
+        conn.update(worksheet=batch, data=empty_df)
+    except Exception:
+        st.error("An error occured while connecting to Google Sheets. Please wait a moment and try again. (Detail: Could not ensure batch sheet exists.)")
+        st.stop()
 
 
 def ensure_sheet_structure(batch: str, conn):
@@ -61,8 +62,8 @@ def ensure_sheet_structure(batch: str, conn):
         return df
 
     except Exception:
-        st.error("Could not validate Google Sheet structure.")
-
+        st.error("An error occured while connecting to Google Sheets. Please wait a moment and try again. (Detail: Could not ensure batch sheet structure.)")
+        st.stop()
 
 @st.cache_data
 def configure_gsheet(batch: str | None = None, _store=None):
@@ -85,7 +86,7 @@ def configure_gsheet(batch: str | None = None, _store=None):
                 ensure_sheet_structure(batch, _store["gsheet_conn"])
             
             return "Successful"
-        except Exception as e:
-            raise Exception(f"Error connecting to Google Sheets. Please check whether you shared the Spreadsheet with the Service Account. {e}")
+        except Exception:
+            st.error(f"Error connecting to Google Sheets. Please check the settings or try again later.")
     else:
         return "Streamlit secrets incomplete. Please set up your secrets as per the instructions."

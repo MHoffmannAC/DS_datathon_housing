@@ -36,10 +36,14 @@ def state_inits():
 
     if store["alltime_submissions"] is None:
         
-        batches = store["gsheet_conn"].read(
-            worksheet="Batches",
-            ttl=0
-        )["Batch"].tolist()
+        try:
+            batches = store["gsheet_conn"].read(
+                worksheet="Batches",
+                ttl=0
+            )["Batch"].tolist()
+        except Exception:
+            st.error("An error occured while connecting to Google Sheets. Please wait a moment and try again. (Detail: Could not load batch list.)")
+            st.stop()
 
         worksheet_titles = [
             b for b in batches if b not in ["Batches", "anonymous"]
@@ -65,11 +69,15 @@ def state_inits():
         build_leaderboards()
         
     if store["batches"] is None or store["batches_last_updated"] is None or (pd.Timestamp.now() - store["batches_last_updated"]).seconds > 300:
-        store["batches"] = store["gsheet_conn"].read(
-            worksheet="Batches",
-            ttl=0,
-        )
-        store["batches_last_updated"] = pd.Timestamp.now()
+        try:
+            store["batches"] = store["gsheet_conn"].read(
+                worksheet="Batches",
+                ttl=0,
+            )
+            store["batches_last_updated"] = pd.Timestamp.now()
+        except Exception:
+            st.error("An error occured while connecting to Google Sheets. Please wait a moment and try again. (Detail: Could not load batch list.)")
+            st.stop()
 
 def validate_csv_file(file):
     try:
@@ -89,21 +97,25 @@ def update_submissions(participant_results: pd.DataFrame):
     batch = st.session_state.batch
 
     if batch in store["submissions"] and not store["submissions"][batch].empty:
-        store["submissions"][batch] = pd.concat(
+        updated_submissions_df = pd.concat(
             [store["submissions"][batch], participant_results],
             ignore_index=True,
         )
     else:
-        store["submissions"][batch] = participant_results
+        updated_submissions_df = participant_results
 
-    updated_submissions_df = store["submissions"][batch].copy()
+    try:
+        store["gsheet_conn"].update(worksheet=batch, data=updated_submissions_df)
+        
+        store["submissions"][batch] = updated_submissions_df
 
-    store["alltime_submissions"] = pd.concat(
-        [store["alltime_submissions"], participant_results],
-        ignore_index=True,
-    )
-
-    store["gsheet_conn"].update(worksheet=batch, data=updated_submissions_df)
+        
+        store["alltime_submissions"] = pd.concat(
+            [store["alltime_submissions"], participant_results],
+            ignore_index=True,
+        )
+    except Exception:
+        st.error("An error occured while submitting your results. Please try again later. (Detail: Could not update submissions in Google Sheets.)")
 
     build_leaderboards()
 
