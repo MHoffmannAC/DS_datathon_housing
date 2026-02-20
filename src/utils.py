@@ -14,14 +14,12 @@ def get_global_store():
         "alltime_leaderboard": None,
         "batches": None,
         "batches_last_updated": None,
+        "gsheet_conn": None,
     }
 
 
 def state_inits():
-    store = get_global_store()
-    
-    if "gsheet_conn" not in st.session_state:
-        configure_gsheet(_store=store)
+
     if "user_name" not in st.session_state:
         st.session_state.user_name = None
     if "code_input" not in st.session_state:
@@ -30,6 +28,11 @@ def state_inits():
         st.session_state.batch = None
     if "alltime" not in st.session_state:
         st.session_state.alltime = None
+
+    store = get_global_store()
+    
+    if store["gsheet_conn"] is None:
+        configure_gsheet(_store=store)
 
     if store["alltime_submissions"] is None:
         
