@@ -114,7 +114,8 @@ def plot_submissions(participant_name):
     )
     if len(participant_submissions) > 1:
         participant_submissions["submission_time"] = pd.to_datetime(
-            participant_submissions["submission_time"]
+            participant_submissions["submission_time"],
+            format="ISO8601"
         )
         participant_submissions = participant_submissions.sort_values(
             "submission_time"
