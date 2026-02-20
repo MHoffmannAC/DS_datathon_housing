@@ -12,6 +12,8 @@ def get_global_store():
         "alltime_submissions": None,
         "leaderboards": {},
         "alltime_leaderboard": None,
+        "batches": None,
+        "batches_last_updated": None,
     }
 
 
@@ -58,7 +60,13 @@ def state_inits():
         )
 
         build_leaderboards()
-
+        
+    if store["batches"] is None or store["batches_last_updated"] is None or (pd.Timestamp.now() - store["batches_last_updated"]).seconds > 300:
+        store["batches"] = st.session_state.gsheet_conn.read(
+            worksheet="Batches",
+            ttl=0,
+        )
+        store["batches_last_updated"] = pd.Timestamp.now()
 
 def validate_csv_file(file):
     try:
@@ -95,17 +103,6 @@ def update_submissions(participant_results: pd.DataFrame):
     st.session_state.gsheet_conn.update(worksheet=batch, data=updated_submissions_df)
 
     build_leaderboards()
-
-
-@st.cache_data(ttl=120)
-def get_batches_dataframe():
-    try:
-        return st.session_state.gsheet_conn.read(
-            worksheet="Batches",
-            ttl=0,
-        )
-    except Exception:
-        st.error("Could not read batches from Google Sheets")
 
 
 def process_uploaded_file(uploaded_file, RESULTS_PATH: str):

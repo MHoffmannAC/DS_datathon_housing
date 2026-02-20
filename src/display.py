@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 from src.utils import (
-    get_batches_dataframe,
     get_global_store,
     build_leaderboards,
 )
@@ -9,13 +8,13 @@ from src.gsheet import configure_gsheet
 
 
 def get_participant_info():
+    store = get_global_store()
 
     if (
         st.session_state.user_name
         and st.session_state.code_input
         and st.session_state.batch
     ):
-        store = get_global_store()
 
         configure_gsheet(st.session_state.batch)
         if st.session_state.batch not in store["submissions"]:
@@ -69,7 +68,7 @@ def get_participant_info():
             "Please enter **your name** (real or alias) and **the code** provided by your instructor."
         )
 
-        batches_df = get_batches_dataframe()
+        batches_df = store["batches"]
 
         user_name = st.text_input("Enter your name: ")
         if user_name:
@@ -169,6 +168,5 @@ def display_setup_error(error_desc: str) -> None:
 def display_admin():
     if st.button("Clear cached ressources"):
         get_global_store.clear()
-        get_batches_dataframe.clear()
         configure_gsheet.clear()
         st.rerun()
