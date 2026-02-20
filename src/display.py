@@ -16,10 +16,10 @@ def get_participant_info():
         and st.session_state.batch
     ):
 
-        configure_gsheet(st.session_state.batch)
+        configure_gsheet(st.session_state.batch, _store=store)
         if st.session_state.batch not in store["submissions"]:
             store["submissions"][st.session_state.batch] = (
-                st.session_state.gsheet_conn.read(
+                store["gsheet_conn"].read(
                     worksheet=st.session_state.batch,
                     ttl=0,
                 )

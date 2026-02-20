@@ -18,8 +18,10 @@ def get_global_store():
 
 
 def state_inits():
+    store = get_global_store()
+    
     if "gsheet_conn" not in st.session_state:
-        configure_gsheet()
+        configure_gsheet(_store=store)
     if "user_name" not in st.session_state:
         st.session_state.user_name = None
     if "code_input" not in st.session_state:
@@ -29,11 +31,9 @@ def state_inits():
     if "alltime" not in st.session_state:
         st.session_state.alltime = None
 
-    store = get_global_store()
-
     if store["alltime_submissions"] is None:
         
-        batches = st.session_state.gsheet_conn.read(
+        batches = store["gsheet_conn"].read(
             worksheet="Batches",
             ttl=0
         )["Batch"].tolist()
@@ -45,7 +45,7 @@ def state_inits():
         dfs = []
         for ws_name in worksheet_titles:
             try:
-                df = st.session_state.gsheet_conn.read(
+                df = store["gsheet_conn"].read(
                     worksheet=ws_name,
                     ttl=0
                 )
@@ -62,7 +62,7 @@ def state_inits():
         build_leaderboards()
         
     if store["batches"] is None or store["batches_last_updated"] is None or (pd.Timestamp.now() - store["batches_last_updated"]).seconds > 300:
-        store["batches"] = st.session_state.gsheet_conn.read(
+        store["batches"] = store["gsheet_conn"].read(
             worksheet="Batches",
             ttl=0,
         )
@@ -100,7 +100,7 @@ def update_submissions(participant_results: pd.DataFrame):
         ignore_index=True,
     )
 
-    st.session_state.gsheet_conn.update(worksheet=batch, data=updated_submissions_df)
+    store["gsheet_conn"].update(worksheet=batch, data=updated_submissions_df)
 
     build_leaderboards()
 

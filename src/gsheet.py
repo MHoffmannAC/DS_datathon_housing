@@ -27,9 +27,7 @@ def get_gsheet_connection():
     return st.connection("gsheets", type=GSheetsConnection)
 
 
-def ensure_batch_sheet_exists(batch: str):
-
-    conn = st.session_state.gsheet_conn
+def ensure_batch_sheet_exists(batch: str, conn):
 
     try:
         conn.read(worksheet=batch, ttl=0)
@@ -50,13 +48,13 @@ def ensure_batch_sheet_exists(batch: str):
     conn.update(worksheet=batch, data=empty_df)
 
 
-def ensure_sheet_structure(batch: str):
+def ensure_sheet_structure(batch: str, conn):
     try:
-        df = st.session_state.gsheet_conn.read(worksheet=batch, ttl=0)
+        df = conn.read(worksheet=batch, ttl=0)
 
         if df is None or df.empty:
             empty_df = pd.DataFrame(columns=REQUIRED_COLUMNS_LEADERBOARD)
-            st.session_state.gsheet_conn.update(worksheet=batch, data=empty_df)
+            conn.update(worksheet=batch, data=empty_df)
 
             return empty_df
 
@@ -67,7 +65,7 @@ def ensure_sheet_structure(batch: str):
 
 
 @st.cache_data
-def configure_gsheet(batch: str | None = None):
+def configure_gsheet(batch: str | None = None, _store=None):
     try:
         "connections" in st.secrets
     except Exception:
@@ -80,12 +78,11 @@ def configure_gsheet(batch: str | None = None):
         and "private_key" in st.secrets["connections"]["gsheets"]
     ):
         try:
-            gsheet_conn = get_gsheet_connection()
-            st.session_state.gsheet_conn = gsheet_conn
+            _store["gsheet_conn"] = get_gsheet_connection()
             
             if batch:
-                ensure_batch_sheet_exists(batch)
-                ensure_sheet_structure(batch)
+                ensure_batch_sheet_exists(batch, _store["gsheet_conn"])
+                ensure_sheet_structure(batch, _store["gsheet_conn"])
             
             return "Successful"
         except Exception as e:
