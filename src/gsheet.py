@@ -1,9 +1,9 @@
-from streamlit_gsheets import GSheetsConnection
-import streamlit as st
-import pandas as pd
 import gspread
+import pandas as pd
+import streamlit as st
 from google.oauth2.service_account import Credentials
 from gspread.exceptions import WorksheetNotFound
+from streamlit_gsheets import GSheetsConnection
 
 REQUIRED_COLUMNS_LEADERBOARD = ["participant", "accuracy", "submission_time", "batch"]
 
@@ -45,7 +45,9 @@ def ensure_batch_sheet_exists(batch: str, conn):
         empty_df = pd.DataFrame(columns=REQUIRED_COLUMNS_LEADERBOARD)
         conn.update(worksheet=batch, data=empty_df)
     except Exception:
-        st.error("An error occured while connecting to Google Sheets. Please wait a moment and try again. (Detail: Could not ensure batch sheet exists.)")
+        st.error(
+            "An error occured while connecting to Google Sheets. Please wait a moment and try again. (Detail: Could not ensure batch sheet exists.)",
+        )
         st.stop()
 
 
@@ -62,8 +64,11 @@ def ensure_sheet_structure(batch: str, conn):
         return df
 
     except Exception:
-        st.error("An error occured while connecting to Google Sheets. Please wait a moment and try again. (Detail: Could not ensure batch sheet structure.)")
+        st.error(
+            "An error occured while connecting to Google Sheets. Please wait a moment and try again. (Detail: Could not ensure batch sheet structure.)",
+        )
         st.stop()
+
 
 @st.cache_data
 def configure_gsheet(batch: str | None = None, _store=None):
@@ -80,13 +85,15 @@ def configure_gsheet(batch: str | None = None, _store=None):
     ):
         try:
             _store["gsheet_conn"] = get_gsheet_connection()
-            
-            if batch:
+
+            if batch and batch not in _store["configured_batches"]:
                 ensure_batch_sheet_exists(batch, _store["gsheet_conn"])
                 ensure_sheet_structure(batch, _store["gsheet_conn"])
-            
+                _store["configured_batches"].add(batch)
             return "Successful"
         except Exception:
-            st.error(f"Error connecting to Google Sheets. Please check the settings or try again later.")
+            st.error(
+                "Error connecting to Google Sheets. Please check the settings or try again later.",
+            )
     else:
-        return "Streamlit secrets incomplete. Please set up your secrets as per the instructions."
+        return "Streamlit secrets incomplete."

@@ -1,11 +1,11 @@
+import io
+
 import pandas as pd
 import streamlit as st
-import io
 
 
 def get_ready_test(RESULTS_PATH: str, uploaded_file):
-    """
-    Prepare the test DataFrame by validating the uploaded file and renaming its columns.
+    """Prepare the test DataFrame by validating the uploaded file and renaming its columns.
 
     Args:
         RESULTS_PATH (str): Path to the results file.
@@ -13,6 +13,7 @@ def get_ready_test(RESULTS_PATH: str, uploaded_file):
 
     Returns:
         pd.DataFrame: Prepared test DataFrame.
+
     """
     results = pd.read_csv(RESULTS_PATH)
     results.columns = ["id", "real"]
@@ -30,7 +31,7 @@ def get_ready_test(RESULTS_PATH: str, uploaded_file):
         return 0
     if (test.Id == results.id).sum() != 1459:
         st.error(
-            "Your Id column might be wrong or mixed up. You should have same Id's as the test file. Order of Id's should also be the same."
+            "Your Id column might be wrong or mixed up. You should have same Id's as the test file. Order of Id's should also be the same.",
         )
         return 0
 
@@ -39,8 +40,7 @@ def get_ready_test(RESULTS_PATH: str, uploaded_file):
 
 
 def get_accuracy(RESULTS_PATH: str, test: pd.DataFrame):
-    """
-    Calculate the accuracy of the test predictions and return a DataFrame with participant results.
+    """Calculate the accuracy of the test predictions and return a DataFrame with participant results.
 
     Args:
         RESULTS_PATH (str): Path to the results file.
@@ -48,6 +48,7 @@ def get_accuracy(RESULTS_PATH: str, test: pd.DataFrame):
 
     Returns:
         pd.DataFrame: DataFrame with participant results.
+
     """
     results = pd.read_csv(RESULTS_PATH)
     results.columns = ["id", "real"]
@@ -66,7 +67,7 @@ def get_accuracy(RESULTS_PATH: str, test: pd.DataFrame):
                 st.session_state.user_name,
                 st.session_state.batch,
                 pd.Timestamp.now().isoformat(),
-            ]
+            ],
         ],
         columns=["accuracy", "participant", "batch", "submission_time"],
         index=["result"],

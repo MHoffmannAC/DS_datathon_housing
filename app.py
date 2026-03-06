@@ -1,12 +1,13 @@
 import streamlit as st
-from src.utils import process_uploaded_file, state_inits, update_submissions
+
 from src.display import (
+    display_admin,
     display_leaderboard,
     display_participant_results,
-    plot_submissions,
     get_participant_info,
-    display_admin,
+    plot_submissions,
 )
+from src.utils import process_uploaded_file, state_inits, update_submissions
 
 # Constants
 RESULTS_PATH = "data/true_y.csv"
@@ -29,7 +30,7 @@ def main():
 
         plot_submissions(st.session_state.user_name)
         display_leaderboard()
-        
+
         if st.session_state.batch == "Instructor":
             display_admin()
 
