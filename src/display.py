@@ -86,7 +86,10 @@ def get_participant_info():
                 st.session_state.code_input,
                 st.session_state.get("batch"),
             )
-            code_to_alltime = batches_df.set_index("Code")["Show All-time?"]
+            code_to_alltime = (
+                batches_df.set_index("Code")["Show All-time?"]
+                .fillna(False)
+            )
             st.session_state.alltime = code_to_alltime.get(st.session_state.code_input)
 
         if (
