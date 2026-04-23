@@ -95,6 +95,7 @@ def update_submissions(participant_results: pd.DataFrame):
         st.error(
             "An error occured while submitting your results. Please try again later. (Detail: Could not update submissions in Google Sheets.)",
         )
+        st.stop()
 
     build_leaderboards()
 
@@ -115,6 +116,7 @@ def process_uploaded_file(uploaded_file, RESULTS_PATH: str):
         st.error(
             "The uploaded file has the wrong format. Please, review it and ensure it contains the required columns.",
         )
+        st.stop()
 
 
 def generate_leaderboard_dataframe(submissions_df):
