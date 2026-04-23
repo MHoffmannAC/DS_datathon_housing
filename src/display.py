@@ -127,8 +127,8 @@ def plot_submissions(participant_name):
         st.success("Congratulations on your first submission!")
 
 
-def show_leaderboard():
-
+@st.fragment(run_every=10)
+def display_leaderboard() -> None:
     if st.session_state.batch == "anonymous":
         st.write("You decided to not compete in any leaderboard.")
     else:
@@ -146,21 +146,14 @@ def show_leaderboard():
         else:
             st.write("There are no submissions from your batch yet.")
 
+        if st.button("Refresh leaderboard(s)"):
+            st.rerun()
+
         if (not store["alltime_submissions"].empty) and st.session_state.alltime:
             st.divider()
             st.header("👑 All-time Leaderboard", anchor=False)
 
             st.dataframe(store["alltime_leaderboard"])
-
-
-@st.fragment(run_every=10)
-def display_leaderboard() -> None:
-    try:
-        show_leaderboard()
-    except Exception:
-        st.error(
-            "An error occured while extracting the leaderboard data. Please wait a moment and try again.",
-        )
 
 
 def display_participant_results(participant_results) -> None:
