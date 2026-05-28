@@ -23,7 +23,7 @@ def get_ready_test(RESULTS_PATH: str, uploaded_file):
     if test.columns.to_list() != ["Id", "Expensive"]:
         st.error('Column names must match "Id" and "Expensive" - case sensitive!')
         return 0
-    if test.shape != (1459, 2):
+    if test.shape != results.shape:
         st.error("Your file should contain 1459 rows and 2 columns")
         return 0
     if test.Expensive.unique().tolist() not in [[0, 1], [1, 0], [1], [0]]:

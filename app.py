@@ -16,6 +16,9 @@ RESULTS_PATH = "data/true_y.csv"
 def main():
     st.title("Welcome to our classification competition!", anchor=False)
 
+    if st.session_state.get("batch") == "Instructor":
+        display_admin()
+
     get_participant_info()
 
     if st.session_state.user_name and st.session_state.batch:
@@ -30,9 +33,6 @@ def main():
 
         plot_submissions(st.session_state.user_name)
         display_leaderboard()
-
-        if st.session_state.batch == "Instructor":
-            display_admin()
 
 
 state_inits()

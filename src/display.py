@@ -78,7 +78,7 @@ def get_participant_info():
         if user_name:
             st.session_state.user_name = user_name
 
-        code_input = st.text_input("Enter your batch's secret code: ")
+        code_input = st.text_input("Enter your batch's secret code: ", type="password")
         if code_input:
             st.session_state.code_input = code_input
             code_to_batch = batches_df.set_index("Code")["Batch"]
@@ -171,7 +171,10 @@ def display_setup_error(error_desc: str) -> None:
 
 
 def display_admin():
-    if st.button("Clear cached ressources"):
+    """Admin tools for instructors to clear global cache."""
+    st.divider()
+    st.subheader("🛠️ Instructor Settings")
+    if st.button("Clear Global Cache"):
         get_global_store.clear()
         configure_gsheet.clear()
         st.rerun()
