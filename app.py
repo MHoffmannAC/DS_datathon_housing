@@ -26,7 +26,11 @@ def main():
         uploaded_file = st.file_uploader("Choose a CSV file", type=["csv"])
 
         if uploaded_file and not st.session_state.get("manual_refresh", False):
-            participant_results, predictions, labels = process_uploaded_file(uploaded_file, RESULTS_PATH)
+            result = process_uploaded_file(uploaded_file, RESULTS_PATH)
+            if result is None:
+                st.stop()
+            else:
+                participant_results, predictions, labels = result
             display_participant_results(participant_results, predictions, labels)
             update_submissions(participant_results)
         else:

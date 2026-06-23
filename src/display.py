@@ -141,7 +141,6 @@ def display_leaderboard() -> None:
         st.divider()
         st.header(f"🏆 Leaderboard from {st.session_state.batch}", anchor=False)
         submissions_df = store["submissions"][st.session_state.batch]
-        store["leaderboards"][st.session_state.batch]
         if not submissions_df.empty:
             leaderboard_df = store["leaderboards"][st.session_state.batch].drop(
                 "batch",

@@ -165,11 +165,12 @@ def process_uploaded_file(uploaded_file, RESULTS_PATH: str):
 
         except Exception as e:
             st.error(f"The file could not be processed. Error: {e}")
+            return None
     else:
         st.error(
             "The uploaded file has the wrong format. Please, review it and ensure it contains the required columns.",
         )
-        st.stop()
+        return None
 
 
 def generate_leaderboard_dataframe(submissions_df):
