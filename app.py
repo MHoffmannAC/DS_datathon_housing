@@ -22,11 +22,12 @@ def main():
     get_participant_info()
 
     if st.session_state.user_name and st.session_state.batch:
+
         uploaded_file = st.file_uploader("Choose a CSV file", type=["csv"])
 
-        if uploaded_file:
-            participant_results = process_uploaded_file(uploaded_file, RESULTS_PATH)
-            display_participant_results(participant_results)
+        if uploaded_file and not st.session_state.get("manual_refresh", False):
+            participant_results, predictions, labels = process_uploaded_file(uploaded_file, RESULTS_PATH)
+            display_participant_results(participant_results, predictions, labels)
             update_submissions(participant_results)
         else:
             st.warning("Please upload a file.")

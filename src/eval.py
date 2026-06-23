@@ -71,4 +71,4 @@ def get_accuracy(RESULTS_PATH: str, test: pd.DataFrame):
         ],
         columns=["accuracy", "participant", "batch", "submission_time"],
         index=["result"],
-    )
+    ), results

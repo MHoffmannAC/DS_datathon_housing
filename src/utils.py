@@ -106,9 +106,9 @@ def process_uploaded_file(uploaded_file, RESULTS_PATH: str):
             uploaded_file.seek(0)  # Reset file pointer to the beginning
             test = get_ready_test(RESULTS_PATH, uploaded_file)
             if isinstance(test, pd.DataFrame):
-                participant_results = get_accuracy(RESULTS_PATH, test)
+                participant_results, labels = get_accuracy(RESULTS_PATH, test)
                 st.success("Dataframe uploaded successfully!")
-                return participant_results
+                return participant_results, test, labels
 
         except Exception as e:
             st.error(f"The file could not be processed. Error: {e}")

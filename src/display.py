@@ -1,4 +1,6 @@
+import matplotlib.pyplot as plt
 import pandas as pd
+import seaborn as sns
 import streamlit as st
 
 from src.gsheet import configure_gsheet
@@ -6,6 +8,9 @@ from src.utils import (
     build_leaderboards,
     get_global_store,
 )
+
+
+CLASS_NAMES = ["Non-Expensive", "Expensive"]
 
 
 def get_participant_info():
@@ -146,7 +151,9 @@ def display_leaderboard() -> None:
         else:
             st.write("There are no submissions from your batch yet.")
 
+        st.session_state["manual_refresh"] = False
         if st.button("Refresh leaderboard(s)"):
+            st.session_state["manual_refresh"] = True
             st.rerun()
 
         if (not store["alltime_submissions"].empty) and st.session_state.alltime:
@@ -156,9 +163,40 @@ def display_leaderboard() -> None:
             st.dataframe(store["alltime_leaderboard"])
 
 
-def display_participant_results(participant_results) -> None:
+def display_participant_results(participant_results, predictions, labels) -> None:
     st.header("📊 Your results", anchor=False)
-    st.dataframe(participant_results)
+    st.success(f"Success! Model Accuracy: {participant_results['accuracy'].values[0]:.2%}")
+    fig, ax = plt.subplots(figsize=(2, 2), facecolor="black")
+    df = predictions.merge(
+        labels,
+        on="id",
+    )
+    cm = pd.crosstab(
+        pd.Series(df["real"].values, name="Actual"),
+        pd.Series(df["preds"].values, name="Predicted"),
+    )
+    cm = cm.reindex(
+        index=range(len(CLASS_NAMES)),
+        columns=range(len(CLASS_NAMES)),
+        fill_value=0,
+    )
+    sns.heatmap(
+        cm,
+        annot=True,
+        fmt="d",
+        cmap="copper",
+        xticklabels=CLASS_NAMES,
+        yticklabels=CLASS_NAMES,
+        ax=ax,
+        cbar=False,
+        annot_kws={"color": "white", "fontsize": 8},
+    )
+    ax.set_xlabel("Predicted", color="white", fontsize=8)
+    ax.set_ylabel("True Label", color="white", fontsize=8)
+    ax.tick_params(colors="white", labelsize=6, which="both", length=0)
+    ax.tick_params(axis="x", rotation=0, colors="white")
+    st.pyplot(fig, use_container_width=False)
+    plt.close(fig)
 
 
 def display_setup_error(error_desc: str) -> None:
