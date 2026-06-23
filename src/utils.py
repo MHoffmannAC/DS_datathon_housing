@@ -185,12 +185,23 @@ def generate_leaderboard_dataframe(submissions_df):
             ascending=[False, True, True],
         )
         .drop_duplicates(subset=["participant"], keep="first")
-        .assign(position=lambda df_: range(1, len(df_) + 1))
-        .set_index("position")
-        .filter(["participant", "accuracy", "attempts", "batch"])
+        .assign(
+            rank=lambda df_: df_["accuracy"].rank(
+                method="min",
+                ascending=False,
+            ).astype(int),
+        )
+        .filter(["rank", "participant", "accuracy", "attempts", "batch"])
     )
 
-    return best_results_per_participant
+    best_results_per_participant["rank"] = best_results_per_participant["rank"].where(
+        best_results_per_participant["rank"].ne(
+            best_results_per_participant["rank"].shift(),
+        ),
+        "",
+    ).astype(str)
+
+    return best_results_per_participant.set_index("rank")
 
 
 def build_leaderboards():
