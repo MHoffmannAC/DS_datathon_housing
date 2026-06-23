@@ -1,10 +1,59 @@
 import io
+import logging
+import sys
 
 import pandas as pd
 import streamlit as st
 
 from src.eval import get_accuracy, get_ready_test
 from src.gsheet import configure_gsheet
+
+
+class CloudLogFormatter(logging.Formatter):
+    # ANSI Terminal Palette Codes
+    RESET = "\033[0m"
+    ORANGE = "\033[33m"
+    GREEN = "\033[32m"
+    MAX_USER_LENGTH = 10
+
+    def format(self, record):
+        level_map = {
+            "DEBUG": "DEBUG",
+            "INFO": "INFO",
+            "WARNING": "WARN",
+            "ERROR": "ERROR",
+            "CRITICAL": "FATAL",
+        }
+        raw_user = str(getattr(record, "user", "SYSTEM"))
+        user_formatted = (
+            raw_user[:self.MAX_USER_LENGTH]
+            if len(raw_user) > self.MAX_USER_LENGTH
+            else raw_user.ljust(self.MAX_USER_LENGTH)
+        )
+
+
+        asctime = self.formatTime(record, self.datefmt)
+        levelname = level_map.get(record.levelname, f"{record.levelname:<5}")
+        msg = record.getMessage()
+
+        if "waitlisted" in msg.lower():
+            color_prefix = self.ORANGE
+        elif "completed" in msg.lower() or "success" in msg.lower():
+            color_prefix = self.GREEN
+        else:
+            color_prefix = ""
+
+        # Assemble the final log stream grid string
+        if color_prefix:
+            return f"{asctime} {levelname} - {user_formatted} {color_prefix}{msg}{self.RESET}"
+        return f"{asctime} {levelname} - {user_formatted} {msg}"
+
+log_handler = logging.StreamHandler(sys.stdout)
+log_handler.setFormatter(CloudLogFormatter(datefmt="%Y-%m-%d %H:%M:%S"))
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+logger.handlers = [log_handler]
 
 
 @st.cache_resource
@@ -108,6 +157,10 @@ def process_uploaded_file(uploaded_file, RESULTS_PATH: str):
             if isinstance(test, pd.DataFrame):
                 participant_results, labels = get_accuracy(RESULTS_PATH, test)
                 st.success("Dataframe uploaded successfully!")
+                logger.info(
+                    f"Evaluation successfull. Accuracy: {participant_results['accuracy'].values[0]:.2%}",
+                    extra={"user": st.session_state.user_name, "comp": "UPLOADER"},
+                )
                 return participant_results, test, labels
 
         except Exception as e:
