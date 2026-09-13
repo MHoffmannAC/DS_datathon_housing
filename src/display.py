@@ -47,20 +47,20 @@ def get_participant_info():
 
         cols = st.columns(4)
 
-        with cols[0], open("data/test.csv", "rb") as f:
-            st.download_button(
-                label="Download  \n test data",
-                data=f,
-                file_name="test.csv",
-                mime="text/csv",
-                use_container_width=True,
-            )
-
-        with cols[1], open("data/housing-classification-iter6.csv", "rb") as f:
+        with cols[0], open("data/housing-classification-iter6.csv", "rb") as f:
             st.download_button(
                 label="Download  \n train data",
                 data=f,
                 file_name="train.csv",
+                mime="text/csv",
+                use_container_width=True,
+            )
+
+        with cols[1], open("data/test.csv", "rb") as f:
+            st.download_button(
+                label="Download  \n test data",
+                data=f,
+                file_name="test.csv",
                 mime="text/csv",
                 use_container_width=True,
             )
